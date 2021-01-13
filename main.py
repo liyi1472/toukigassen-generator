@@ -157,9 +157,9 @@ def generate_quizizz(handler):
 
 
 if __name__ == '__main__':
-    # データベースをクリアする
-    os.remove('sqlite/database.db')
     # データベースを作成する
+    if os.path.exists('sqlite/database.db'):
+        os.remove('sqlite/database.db')
     db = sqlite3.connect('sqlite/database.db')
     handler = db.cursor()
     # テーブルを作成する
@@ -173,3 +173,5 @@ if __name__ == '__main__':
     generate_upload_file(handler)
     # データベースの接続を解除する
     db.close()
+    # データベースを削除する
+    os.remove('sqlite/database.db')
