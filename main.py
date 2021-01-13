@@ -36,8 +36,7 @@ def generate_upload_file(handler):
     if os.path.exists('input/kahoot.xlsx'):
         # Kahoot!
         generate_kahoot(handler)
-        # TODO:
-        # os.remove('input/kahoot.xlsx')
+        os.remove('input/kahoot.xlsx')
     elif os.path.exists('input/quizizz.xlsx'):
         # Quizizz
         generate_quizizz(handler)
@@ -104,7 +103,7 @@ def generate_quizizz(handler):
     curRow = 3
     # フォーマット定義
     colQuestion = 'A'
-    colType = 'B'
+    colQuestionType = 'B'
     colOption1 = 'C'
     colOption2 = 'D'
     colOption3 = 'E'
@@ -113,7 +112,46 @@ def generate_quizizz(handler):
     colAnswer = 'H'
     colTimeLimit = 'I'
     colImageLink = 'J'
-    # TODO:
+    # データを抽出する
+    questions = handler.execute(
+        'SELECT * FROM vocabulary ORDER BY RANDOM() LIMIT 20').fetchall()
+    for question in questions:
+        questionId = question[0]
+        questionWord = question[1]
+        questionMeaning = question[2]
+        # 問題文を作成する
+        ws[colQuestion + str(curRow)] = questionWord
+        # 問題のタイプを指定する
+        ws[colQuestionType + str(curRow)] = 'Multiple Choice'
+        # 選択肢を作成する
+        options = handler.execute(
+            'SELECT meaning FROM vocabulary WHERE id <> ' + str(questionId) + ' ORDER BY RANDOM() LIMIT 5').fetchall()
+        ws[colOption1 + str(curRow)] = options[0][0]
+        ws[colOption2 + str(curRow)] = options[1][0]
+        ws[colOption3 + str(curRow)] = options[2][0]
+        ws[colOption4 + str(curRow)] = options[3][0]
+        ws[colOption5 + str(curRow)] = options[4][0]
+        # 時間制限を指定する
+        ws[colTimeLimit + str(curRow)] = 5
+        # 1/2/3/4/5の中で正解を決める
+        answerOption = randrange(1, 6)
+        ws[colAnswer + str(curRow)] = answerOption
+        if answerOption == 1:
+            ws[colOption1 + str(curRow)] = questionMeaning
+        elif answerOption == 2:
+            ws[colOption2 + str(curRow)] = questionMeaning
+        elif answerOption == 3:
+            ws[colOption3 + str(curRow)] = questionMeaning
+        elif answerOption == 4:
+            ws[colOption4 + str(curRow)] = questionMeaning
+        elif answerOption == 5:
+            ws[colOption5 + str(curRow)] = questionMeaning
+        else:
+            # 何もしない
+            pass
+        # 画像リンクを空にする
+        ws[colImageLink + str(curRow)] = ''
+        curRow += 1
     # ファイルを保存する
     wb.save('output/quizizz.xlsx')
 
