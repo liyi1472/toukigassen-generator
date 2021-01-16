@@ -1,3 +1,3 @@
 @echo off
-start "Window title" python3 "main.py"
-pause
+start "Window title" python "main.py"
+rem pause

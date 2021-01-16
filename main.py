@@ -2,30 +2,41 @@ import os
 import sqlite3
 from openpyxl import load_workbook
 from random import randrange
+import platform
+import subprocess
+import ctypes
 
 
 def import_data(handler, platform):
     # ファイルを読み込む
-    if platform == "kahoot":
+    if platform == "Kahoot!":
         # Kahoot!
-        wb = load_workbook("input/kahoot.xlsx")
-    elif platform == "quizizz":
+        filename = "kahoot.xlsx"
+    elif platform == "Quizizz":
         # Quizizz
-        wb = load_workbook("input/quizizz.xlsx")
+        filename = "quizizz.xlsx"
     else:
-        # 何もしない
-        pass
+        # サポートしないプラットフォーム
+        msgbox(platform + " に対応していません。", "サポートしないプラットフォーム")
+        exit(1)
     # データを取り込む
     vocabulary = []
+    wb = load_workbook("input/" + filename)
     ws = wb.worksheets[0]
     for row in ws.rows:
         if row[0].value is None:
-            # Empty Word
-            print('Oops! "' + row[0].coordinate + '" is EMPTY.')
+            # 空白セル（単語列）
+            msgbox(
+                "input/" + filename + " の " + row[0].coordinate + " に内容を入力してください。",
+                "空白セル（単語列）",
+            )
             exit(1)
         if row[1].value is None:
-            # Empty Meaning
-            print('Oops! "' + row[1].coordinate + '" is EMPTY.')
+            # 空白セル（意味列）
+            msgbox(
+                "input/" + filename + " の " + row[1].coordinate + " に内容を入力してください。",
+                "空白セル（意味列）",
+            )
             exit(1)
         vocabulary.append((row[0].value, row[1].value))
     # データベースにインポートする
@@ -35,17 +46,18 @@ def import_data(handler, platform):
 
 
 def generate_upload_file(handler, platform):
-    if platform == "kahoot":
+    if platform == "Kahoot!":
         # Kahoot!
         generate_kahoot(handler)
         os.rename("input/kahoot.xlsx", "input/_kahoot.xlsx")
-    elif platform == "quizizz":
+    elif platform == "Quizizz":
         # Quizizz
         generate_quizizz(handler)
         os.rename("input/quizizz.xlsx", "input/_quizizz.xlsx")
     else:
-        # 何もしない
-        pass
+        # サポートしないプラットフォーム
+        msgbox(platform + " に対応していません。", "サポートしないプラットフォーム")
+        exit(1)
 
 
 def generate_kahoot(handler):
@@ -166,6 +178,34 @@ def generate_quizizz(handler):
     wb.save("output/quizizz.xlsx")
 
 
+def msgbox(message, title="エラー"):
+    if platform.system() == "Windows":
+        # Windows
+        MessageBox = ctypes.windll.user32.MessageBoxW
+        MessageBox(None, message, title, 0)
+    elif platform.system() == "Darwin":
+        # macOS
+        os.system(
+            "osascript -e 'display alert \"" + title + '" message "' + message + "\"'"
+        )
+    else:
+        # Linux
+        # 対応していません
+        pass
+
+
+def open_folder(path):
+    if platform.system() == "Windows":
+        # Windows
+        os.startfile(path)
+    elif platform.system() == "Darwin":
+        # macOS
+        subprocess.Popen(["open", path])
+    else:
+        # Linux
+        subprocess.Popen(["xdg-open", path])
+
+
 def main(platform):
     # データベースを作成する
     if os.path.exists("sqlite/database.db"):
@@ -208,12 +248,16 @@ if __name__ == "__main__":
     if os.path.exists("input/kahoot.xlsx"):
         # Kahoot!
         emptyInput = False
-        main("kahoot")
+        main("Kahoot!")
     if os.path.exists("input/quizizz.xlsx"):
         # Quizizz
         emptyInput = False
-        main("quizizz")
+        main("Quizizz")
     if emptyInput is True:
-        # File Not Found
-        print('Oops! File "kahoot.xlsx" or "quizizz.xlsx" is not found in "input/".')
+        # ファイルが見つかりません
+        msgbox(
+            "入力フォルダの input/ に kahoot.xlsx または quizizz.xlsx を入れてください。", "ファイルが見つかりません"
+        )
         exit(1)
+    # 出力フォルダを開く
+    open_folder("output")
